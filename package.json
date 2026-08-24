@@ -1,6 +1,6 @@
 {
   "name": "@pritset/sdk",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Official Node.js SDK for the Pritset document API",
   "license": "MIT",
   "author": "Pritset",
