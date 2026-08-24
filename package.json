@@ -1,13 +1,13 @@
 {
   "name": "@pritset/sdk",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Official Node.js SDK for the Pritset document API",
   "license": "MIT",
   "author": "Pritset",
   "homepage": "https://github.com/Pritset/pritset-node-sdk#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Pritset/pritset-node-sdk.git"
+    "url": "git+https://github.com/Pritset/pritset-node-sdk.git"
   },
   "bugs": {
     "url": "https://github.com/Pritset/pritset-node-sdk/issues"
@@ -17,7 +17,7 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": {
+    ".": { 
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
