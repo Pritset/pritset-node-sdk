@@ -7,7 +7,7 @@
   "homepage": "https://github.com/pritset/pritset-node-sdk#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/pritset/pritset-node-sdk.git"
+    "url": "https://github.com/pritset/pritset-node-sdk.git"
   },
   "bugs": {
     "url": "https://github.com/pritset/pritset-node-sdk/issues"
@@ -41,6 +41,7 @@
     "typecheck": "tsc --noEmit",
     "contract:check": "node scripts/verify-contract.mjs",
     "pack:check": "node scripts/verify-package.mjs",
+    "staging:test": "npm run build && node scripts/staging-lifecycle.mjs",
     "verify": "npm run contract:check && npm run typecheck && npm run test && npm run build && npm run pack:check"
   },
   "dependencies": {
@@ -51,7 +52,8 @@
     "@types/node": "^18.19.120",
     "tsup": "^8.5.0",
     "typescript": "^5.9.2",
-    "vitest": "^2.1.9"
+    "vite": "^6.4.3",
+    "vitest": "^3.2.7"
   },
   "publishConfig": {
     "access": "public",
