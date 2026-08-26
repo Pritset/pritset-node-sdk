@@ -62,7 +62,7 @@ export class Transport {
       headers: {
         Authorization: this.#accessToken,
         "X-Secret": this.#secret,
-        "User-Agent": "pritset-node-sdk/0.1.0",
+        "User-Agent": "pritset-node-sdk/0.1.5",
         ...config.headers,
       },
       ...(config.data !== undefined ? { data: config.data } : {}),

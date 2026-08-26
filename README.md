@@ -2,7 +2,7 @@
 
 Official Node.js client for managing Pritset DOCX templates and generating PDFs.
 
-> Preview: the package is currently `0.1.0`. Public method names may be refined before `1.0.0`.
+> Preview: the package is currently `0.1.5`. Public method names may be refined before `1.0.0`.
 
 ## Requirements
 
@@ -211,6 +211,20 @@ const { PritsetClient } = require("@pritset/sdk");
 
 - SDK contract: `pritset/pritset-sdk-contract`, version 1.0.0.
 - API documentation: https://pritset.com/docs/api
+
+## Production test-user lifecycle validation
+
+The opt-in production test validates template upload, listing, details, update, download, direct PDF generation, webhook submission, deletion, and the final `404` response. It must use a dedicated production test user. The test creates a uniquely named template and removes it in a `finally` cleanup block.
+
+Set `PRITSET_BASE_URL`, `PRITSET_ACCESS_TOKEN`, `PRITSET_SECRET`, and `PRITSET_WEBHOOK_URL`. For `https://api.pritset.com`, also set both `PRITSET_ALLOW_PRODUCTION=true` and `PRITSET_PRODUCTION_TEST_USER_CONFIRMED=true`, then run:
+
+```bash
+npm run production:test
+```
+
+The manual `Production test lifecycle` GitHub Actions workflow uses the protected `production-test` environment, hardcodes the target to `https://api.pritset.com`, and requires the operator to type `RUN-PRODUCTION-TEST`. Configure `PRITSET_ACCESS_TOKEN`, `PRITSET_SECRET`, and `PRITSET_WEBHOOK_URL` as environment secrets and configure `PRITSET_PRODUCTION_TEST_USER_CONFIRMED=true` as an environment variable. Add required reviewers and restrict deployment branches for this environment before running it.
+
+The test may consume production test-user credit and create webhook traffic. It never prints credentials and refuses non-HTTPS webhook URLs when pointed at production.
 
 ## Contributing and security
 

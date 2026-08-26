@@ -1,10 +1,10 @@
 {
   "name": "@pritset/sdk",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Official Node.js SDK for the Pritset document API",
   "license": "MIT",
   "author": "Pritset",
-  "homepage": "https://github.com/Pritset/pritset-node-sdk#readme",
+  "homepage": "https://pritset.com",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Pritset/pritset-node-sdk.git"
@@ -41,7 +41,7 @@
     "typecheck": "tsc --noEmit",
     "contract:check": "node scripts/verify-contract.mjs",
     "pack:check": "node scripts/verify-package.mjs",
-    "staging:test": "npm run build && node scripts/staging-lifecycle.mjs",
+    "production:test": "npm run build && node scripts/production-lifecycle.mjs",
     "verify": "npm run contract:check && npm run typecheck && npm run test && npm run build && npm run pack:check"
   },
   "dependencies": {
