@@ -216,6 +216,20 @@ const { PritsetClient } = require("@pritset/sdk");
 
 The opt-in production test validates template upload, listing, details, update, download, direct PDF generation, webhook submission, deletion, and the final `404` response. It must use a dedicated production test user. The test creates a uniquely named template and removes it in a `finally` cleanup block.
 
+For a local PowerShell run, copy `.env.example` to `.env`, fill in the dedicated production test-user credentials and controlled webhook URL, and set both production confirmation flags to `true`. The `.env` file is ignored by Git. The launcher reads only known Pritset settings, never prints secret values, and removes them from the process environment afterward:
+
+```powershell
+pwsh ./scripts/run-production-test.ps1
+```
+
+To use a file in another location:
+
+```powershell
+pwsh ./scripts/run-production-test.ps1 -EnvFile C:\secure\pritset-production-test.env
+```
+
+The launcher still requires typing `RUN-PRODUCTION-TEST` before it contacts production. The access token must be the raw Pritset token without a `Bearer ` prefix, and the secret must be the matching secret issued with that token.
+
 Set `PRITSET_BASE_URL`, `PRITSET_ACCESS_TOKEN`, `PRITSET_SECRET`, and `PRITSET_WEBHOOK_URL`. For `https://api.pritset.com`, also set both `PRITSET_ALLOW_PRODUCTION=true` and `PRITSET_PRODUCTION_TEST_USER_CONFIRMED=true`, then run:
 
 ```bash
@@ -224,7 +238,7 @@ npm run production:test
 
 The manual `Production test lifecycle` GitHub Actions workflow uses the protected `production-test` environment, hardcodes the target to `https://api.pritset.com`, and requires the operator to type `RUN-PRODUCTION-TEST`. Configure `PRITSET_ACCESS_TOKEN`, `PRITSET_SECRET`, and `PRITSET_WEBHOOK_URL` as environment secrets and configure `PRITSET_PRODUCTION_TEST_USER_CONFIRMED=true` as an environment variable. Add required reviewers and restrict deployment branches for this environment before running it.
 
-The test may consume production test-user credit and create webhook traffic. It never prints credentials and refuses non-HTTPS webhook URLs when pointed at production.
+The test may consume production test-user credit and create webhook traffic. It never prints credentials and refuses non-HTTPS webhook URLs when pointed at production. A `401` on the first validation request means the token and secret were rejected; no template has been created at that point.
 
 ## Contributing and security
 

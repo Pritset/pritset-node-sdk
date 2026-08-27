@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { access } from "node:fs/promises";
+import { Agent as HttpAgent } from "node:http";
+import { Agent as HttpsAgent } from "node:https";
 import { fileURLToPath } from "node:url";
 
+import axios from "axios";
 import { PritsetApiError, PritsetClient } from "../dist/index.js";
 
 const baseUrl = requiredEnvironment("PRITSET_BASE_URL");
@@ -47,12 +50,15 @@ if (!/^[a-z0-9][a-z0-9-]{0,47}$/.test(runPrefix)) {
 
 await access(templatePath);
 
+const httpAgent = new HttpAgent({ keepAlive: false });
+const httpsAgent = new HttpsAgent({ keepAlive: false });
 const client = new PritsetClient({
   accessToken,
   secret,
   baseUrl,
   allowInsecureHttp: target.protocol === "http:",
   timeoutMs: 120_000,
+  httpClient: axios.create({ httpAgent, httpsAgent }),
 });
 
 const runId = `${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
@@ -73,6 +79,7 @@ let lifecycleFailed = false;
 let creationAttempted = false;
 
 try {
+  console.log("Validating template");
   const valid = await client.templates.validate({
     file: { data: templatePath },
     data,
@@ -81,6 +88,7 @@ try {
   passed("validate template");
 
   creationAttempted = true;
+  console.log("Creating template");
   const created = await client.templates.create({
     name: originalName,
     tags: `${runPrefix},node`,
@@ -91,15 +99,18 @@ try {
   assert.equal(created.name, originalName);
   passed("create template");
 
+  console.log("Filter templates");
   const page = await client.templates.list({ search: originalName, page: 1, pageSize: 100 });
   assert.ok(page.data.some((template) => template.id === templateId), "Created template was not returned by list.");
   passed("list templates");
 
+  console.log("Template details");
   const details = await client.templates.get(templateId);
   assert.equal(details.template.id, templateId);
   assert.ok(details.fileInfo.size > 0, "Template details reported an empty file.");
   passed("get template details");
 
+  console.log("Template update");
   const updated = await client.templates.update(templateId, {
     name: updatedName,
     tags: `${runPrefix},node,updated`,
@@ -108,22 +119,26 @@ try {
   assert.equal(updated.name, updatedName);
   passed("update template");
 
+  console.log("Template download");
   const download = await client.templates.download(templateId);
   const docx = await download.toBuffer();
   assert.ok(docx.length > 4, "Downloaded template was empty.");
   assert.equal(docx.subarray(0, 2).toString("ascii"), "PK", "Downloaded template was not a DOCX ZIP archive.");
   passed("download template");
 
+  console.log("Generate direct PDF");
   const document = await client.documents.generate(templateId, data);
   const pdf = await document.toBuffer();
   assert.ok(pdf.length > 5, "Generated PDF was empty.");
   assert.equal(pdf.subarray(0, 5).toString("ascii"), "%PDF-", "Generated document was not a PDF.");
   passed("generate direct PDF");
 
+  console.log("Generate webhook PDF");
   const job = await client.documents.generateWebhook(templateId, data, webhookUrl);
   assert.ok(job.id, "Webhook response did not include a job ID.");
   passed("submit webhook PDF generation");
 
+  console.log("Template deletion");
   await client.templates.delete(templateId);
   deleted = true;
   passed("delete template");
@@ -133,36 +148,48 @@ try {
 
   console.log("Node SDK production test-user lifecycle passed.");
 } catch (error) {
+  console.log(error);
   lifecycleFailed = true;
+  if (error instanceof PritsetApiError && error.status === 401) {
+    console.error(
+      "Production authentication failed (401). Confirm that PRITSET_ACCESS_TOKEN is the raw Pritset token "
+      + "without a Bearer prefix and PRITSET_SECRET is the matching secret for the same production test user.",
+    );
+  }
   throw error;
 } finally {
-  if (templateId && !deleted) {
-    try {
-      await client.templates.delete(templateId);
-      console.log("Cleanup removed the temporary template.");
-    } catch (cleanupError) {
-      console.error(`Cleanup failed for temporary template ${templateId}.`);
-      if (!lifecycleFailed) {
-        throw cleanupError;
+  try {
+    if (templateId && !deleted) {
+      try {
+        await client.templates.delete(templateId);
+        console.log("Cleanup removed the temporary template.");
+      } catch (cleanupError) {
+        console.error(`Cleanup failed for temporary template ${templateId}.`);
+        if (!lifecycleFailed) {
+          throw cleanupError;
+        }
       }
     }
-  }
-  if (creationAttempted && !templateId) {
-    try {
-      const page = await client.templates.list({ search: originalName, page: 1, pageSize: 100 });
-      const leakedTemplates = page.data.filter(
-        (template) => template.name === originalName || template.name === updatedName,
-      );
-      for (const template of leakedTemplates) {
-        await client.templates.delete(template.id);
-        console.log(`Fallback cleanup removed temporary template ${template.id}.`);
-      }
-    } catch (cleanupError) {
-      console.error(`Fallback cleanup failed for temporary template name ${originalName}.`);
-      if (!lifecycleFailed) {
-        throw cleanupError;
+    if (creationAttempted && !templateId) {
+      try {
+        const page = await client.templates.list({ search: originalName, page: 1, pageSize: 100 });
+        const leakedTemplates = page.data.filter(
+          (template) => template.name === originalName || template.name === updatedName,
+        );
+        for (const template of leakedTemplates) {
+          await client.templates.delete(template.id);
+          console.log(`Fallback cleanup removed temporary template ${template.id}.`);
+        }
+      } catch (cleanupError) {
+        console.error(`Fallback cleanup failed for temporary template name ${originalName}.`);
+        if (!lifecycleFailed) {
+          throw cleanupError;
+        }
       }
     }
+  } finally {
+    httpAgent.destroy();
+    httpsAgent.destroy();
   }
 }
 
